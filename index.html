@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarboScam — Calculateur fiscal auto 2026 (CO2, poids, carte grise)</title>
+  <meta name="description" content="Calculez en 10 secondes combien l'État va vous tondre : malus CO2, malus au poids et carte grise 2026, pour véhicules neufs et imports d'occasion. Barèmes officiels, humour gratuit.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>">
+  <link rel="preconnect" href="https://data.ademe.fr">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <h1>Carbo<span class="accent">Scam</span><span class="tm">™</span></h1>
+  <p class="tagline">Le simulateur <em>officiel</em>* de la tonte fiscale automobile française.</p>
+  <p class="sub">Malus CO2 + malus au poids + carte grise — véhicules neufs &amp; imports d'occasion, barèmes 2015 → 2026.</p>
+  <p class="asterisk">*pas du tout officiel, mais les barèmes le sont. Hélas.</p>
+</header>
+
+<main>
+  <form id="form" class="card" autocomplete="off">
+
+    <h2>1. La victime <span class="muted">(votre future voiture)</span></h2>
+
+    <div class="recherche-wrap">
+      <input type="search" id="recherche" placeholder="🔍 Rechercher un modèle (ex : Clio, 3008, Model Y…)"
+             aria-label="Recherche de véhicule">
+      <div id="suggestions" class="suggestions" hidden></div>
+    </div>
+    <p class="hint" id="hint-recherche"></p>
+
+    <div class="switch-type" role="radiogroup" aria-label="Type de véhicule">
+      <input type="radio" name="type" id="type-neuf" checked>
+      <label for="type-neuf">Neuf (2026)</label>
+      <input type="radio" name="type" id="type-import">
+      <label for="type-import">Import / occasion étrangère</label>
+    </div>
+
+    <div id="bloc-import" class="grid-2" hidden>
+      <div class="champ">
+        <label for="mois">1<sup>re</sup> immatriculation — mois</label>
+        <select id="mois">
+          <option value="1">Janvier</option><option value="2">Février</option>
+          <option value="3">Mars</option><option value="4">Avril</option>
+          <option value="5">Mai</option><option value="6" selected>Juin</option>
+          <option value="7">Juillet</option><option value="8">Août</option>
+          <option value="9">Septembre</option><option value="10">Octobre</option>
+          <option value="11">Novembre</option><option value="12">Décembre</option>
+        </select>
+      </div>
+      <div class="champ">
+        <label for="annee">1<sup>re</sup> immatriculation — année</label>
+        <select id="annee"></select>
+      </div>
+      <div class="champ">
+        <label for="km">Km moyens / an <span class="muted">(optionnel, réduit le malus)</span></label>
+        <input type="number" id="km" min="0" step="any" placeholder="ex : 25 000">
+      </div>
+    </div>
+
+    <h2>2. Les pièces à conviction</h2>
+
+    <div class="grid-2">
+      <div class="champ">
+        <label for="co2">Émissions CO2 <span class="muted">(g/km, mixte)</span></label>
+        <input type="number" id="co2" min="0" max="600" placeholder="ex : 145" required>
+      </div>
+      <div class="champ">
+        <label for="masse">Masse en ordre de marche <span class="muted">(kg)</span></label>
+        <input type="number" id="masse" min="0" max="4000" placeholder="ex : 1 750">
+      </div>
+      <div class="champ">
+        <label for="cv">Puissance fiscale <span class="muted">(CV)</span></label>
+        <input type="number" id="cv" min="1" max="100" placeholder="ex : 8" required>
+      </div>
+      <div class="champ">
+        <label for="energie">Énergie</label>
+        <select id="energie">
+          <option value="essence">Essence</option>
+          <option value="diesel">Diesel</option>
+          <option value="hybride">Hybride</option>
+          <option value="phev">Hybride rechargeable</option>
+          <option value="e85">Superéthanol E85</option>
+          <option value="electrique">Électrique</option>
+          <option value="hydrogene">Hydrogène</option>
+        </select>
+      </div>
+      <div class="champ">
+        <label for="region">Région d'immatriculation</label>
+        <select id="region"></select>
+      </div>
+      <div class="champ">
+        <label for="enfants">Enfants à charge <span class="muted">(abattement dès 3)</span></label>
+        <input type="number" id="enfants" min="0" max="15" value="0">
+      </div>
+      <div class="champ">
+        <label for="prix">Prix du véhicule <span class="muted">(€, optionnel — pour le taux d'arnaque)</span></label>
+        <input type="number" id="prix" min="0" step="any" placeholder="ex : 35 000">
+      </div>
+    </div>
+
+    <button type="submit" class="cta">Calculer la douloureuse</button>
+  </form>
+
+  <section id="resultats" class="card resultats" hidden aria-live="polite">
+    <div class="verdict">
+      <div id="verdict-emoji" class="verdict-emoji">🐑</div>
+      <div>
+        <h2 id="verdict-titre"></h2>
+        <p id="verdict-texte"></p>
+      </div>
+    </div>
+    <div class="total">
+      <span class="total-label">L'État vous réclame</span>
+      <span id="total-amount" class="total-amount">0 €</span>
+    </div>
+    <div id="detail" class="detail"></div>
+    <div id="notes" class="notes"></div>
+  </section>
+
+  <section class="card infos">
+    <h2>Comment on calcule <span class="muted">(la partie sérieuse)</span></h2>
+    <ul>
+      <li><strong>Malus CO2</strong> : barème 2026 (dès 108 g/km, plafond 80 000 €) pour le neuf. Pour un import d'occasion : barème de l'année de 1<sup>re</sup> immatriculation (2015 → 2026, NEDC ou WLTP selon la date), puis coefficient forfaitaire de décote selon l'ancienneté en mois (règle en vigueur depuis mars 2025). Aucun malus si 1<sup>re</sup> immat avant 2015.</li>
+      <li><strong>Malus au poids</strong> : dès 1 500 kg en 2026 (10 à 30 €/kg par tranches). Électriques et hydrogène exonérés, abattements hybrides / hybrides rechargeables / familles nombreuses. Cumul CO2 + poids plafonné (80 000 € en 2026). Pour un import : barème de l'année de 1<sup>re</sup> immat (inexistant avant 2022) puis même décote.</li>
+      <li><strong>Carte grise</strong> : taxe régionale 2026 (tarif du cheval fiscal de votre région, demi-tarif au-delà de 10 ans) + taxe fixe 11 € + redevance d'acheminement 2,76 €.</li>
+    </ul>
+    <p class="disclaimer">⚠️ Simulation indicative basée sur les barèmes publiés (à jour : juin 2026). Cas particuliers non couverts : handicap (exonération totale), véhicules de société, TVS, éco-score, départements à majoration spécifique. Vérifiez toujours sur
+      <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F35947" target="_blank" rel="noopener">service-public.gouv.fr</a> avant de signer quoi que ce soit.</p>
+  </section>
+</main>
+
+<footer>
+  <p>CarboScam — fait avec rage et des barèmes officiels.
+    Recherche véhicules : <a href="https://data.ademe.fr/datasets/ademe-car-labelling" target="_blank" rel="noopener">ADEME Car Labelling</a> ·
+    <a href="https://github.com/Orion-FR/CarboScam" target="_blank" rel="noopener">Code source</a></p>
+  <p class="muted">Aucune donnée ne quitte votre navigateur (à part vos illusions).</p>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
