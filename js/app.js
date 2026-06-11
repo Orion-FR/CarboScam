@@ -193,9 +193,9 @@ function verdict(total, prix) {
   }
   const radars = total / 40000;
   const equiv = radars >= 0.5
-    ? 'Soit ' + radars.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' radar(s) tourelle flambant neuf(s). Merci pour eux. 📸'
+    ? 'Soit ' + radars.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' radar(s) tourelle flambant neuf(s). Merci pour eux.'
     : total >= 90 ? 'Soit ' + Math.round(total / 90) + ' plein(s) de SP95-E10. Sans les points de fidélité.' : '';
-  return { emoji: v[0], titre: v[1], texte: v[2], taux, equiv };
+  return { titre: v[0], texte: v[1], taux, equiv };
 }
 
 /* ------------------------------------------------------------------ */
@@ -223,7 +223,6 @@ function afficher(res, prix) {
 
   $('#total-amount').textContent = eur(res.total);
   const v = verdict(res.total, prix);
-  $('#verdict-emoji').textContent = v.emoji;
   $('#verdict-titre').textContent = v.titre;
   $('#verdict-texte').innerHTML = v.texte +
     (v.taux ? '<br>' + v.taux : '') + (v.equiv ? '<br>' + v.equiv : '');
@@ -262,10 +261,26 @@ async function chercherVehicule(q) {
   const select = ['Marque', 'Modèle', 'Description_Commerciale', 'CO2_vitesse_mixte_Max',
     'Masse_OM_Max', 'Puissance_fiscale', 'Energie', 'Prix_véhicule', 'Type_de_boite']
     .map(encodeURIComponent).join(',');
-  const url = ADEME_API + '?q=' + encodeURIComponent(q) + '&size=8&select=' + select;
+  const url = ADEME_API + '?q=' + encodeURIComponent(q) + '&size=40&select=' + select;
   const r = await fetch(url, { signal: searchAbort.signal });
   if (!r.ok) throw new Error('API ADEME indisponible');
-  return (await r.json()).results || [];
+  const results = (await r.json()).results || [];
+  const vus = new Set();
+  const uniques = [];
+  for (const it of results) {
+    const sig = [
+      it['Marque'],
+      it['Description_Commerciale'] || it['Modèle'],
+      it['CO2_vitesse_mixte_Max'] != null ? Math.round(it['CO2_vitesse_mixte_Max']) : '?',
+      it['Masse_OM_Max'] != null ? Math.round(it['Masse_OM_Max']) : '?',
+      it['Puissance_fiscale'], it['Energie']
+    ].join('|');
+    if (vus.has(sig)) continue;
+    vus.add(sig);
+    uniques.push(it);
+    if (uniques.length >= 8) break;
+  }
+  return uniques;
 }
 
 function afficherSuggestions(items) {

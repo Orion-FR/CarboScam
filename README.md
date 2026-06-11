@@ -1,4 +1,4 @@
-# CarboScam™ 💸
+# CarboScam
 
 > Le simulateur *officiel\** de la tonte fiscale automobile française.
 > \*pas du tout officiel, mais les barèmes le sont. Hélas.
